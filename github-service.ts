@@ -1,11 +1,14 @@
 import {graphql} from '@octokit/graphql';
+import type {ContributionKind} from './score-calculator';
 
 export interface RepoStats {
   issues: number;
   pullRequests: number;
 }
 
-export type ContributionLabel = 'feature' | 'bug' | 'docs' | 'typo' | 'none';
+// score-calculator.ts 의 ContributionKind(doc 단수형)를 그대로 재사용해
+// 도메인 용어를 통일합니다. 미인식 라벨은 'none'으로만 확장합니다.
+export type ContributionLabel = ContributionKind | 'none';
 
 export interface PRRecord {
   number: number;
@@ -90,7 +93,7 @@ export const normalizeLabel = (label: string): ContributionLabel => {
   const key = label.toLowerCase().replace(/[-_\s]/g, '');
   if (key === 'feat' || key === 'feature') return 'feature';
   if (key === 'bug') return 'bug';
-  if (key === 'doc' || key === 'docs' || key === 'documentation') return 'docs';
+  if (key === 'doc' || key === 'docs' || key === 'documentation') return 'doc';
   if (key === 'typo') return 'typo';
   return 'none';
 };
@@ -161,7 +164,7 @@ export const mapDetailedRepoResponse = (
 export interface CategoryCounts {
   feature: number;
   bug: number;
-  docs: number;
+  doc: number;
   typo: number;
   none: number;
 }
@@ -172,7 +175,7 @@ export const countByCategory = (
   const counts: CategoryCounts = {
     feature: 0,
     bug: 0,
-    docs: 0,
+    doc: 0,
     typo: 0,
     none: 0,
   };

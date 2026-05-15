@@ -106,10 +106,10 @@ cli
             const featureIssueCount = issueCounts.feature + issueCounts.bug;
             console.log(`[${repoPath}]`);
             console.log(
-              `Merged PRs - feature: ${featurePrCount}, docs: ${prCounts.docs}, typo: ${prCounts.typo}`,
+              `Merged PRs - feature: ${featurePrCount}, docs: ${prCounts.doc}, typo: ${prCounts.typo}`,
             );
             console.log(
-              `Closed Issues - feature: ${featureIssueCount}, docs: ${issueCounts.docs}`,
+              `Closed Issues - feature: ${featureIssueCount}, docs: ${issueCounts.doc}`,
             );
           }
         } catch (error: unknown) {
