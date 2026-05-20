@@ -1,5 +1,10 @@
 import {cac} from 'cac';
 import {countByCategory, createGitHubService} from './github-service';
+import {
+  ScoreCalculator,
+  type RepoData,
+  type UserScore,
+} from './score-calculator';
 
 const cli = cac('reposcore-ts');
 
@@ -16,6 +21,22 @@ function parseRepoPath(repoPath: string) {
     owner: parts[0],
     repoName: parts[1],
   };
+}
+
+const CSV_HEADER =
+  'userId,prFeatureBug,prDocs,prTypo,issueFeatureBug,issueDocs,totalScore';
+
+function formatCsvRow(user: UserScore): string {
+  const {userId, aggregated, totalScore} = user;
+  return [
+    userId,
+    aggregated.prFeatureBug,
+    aggregated.prDocs,
+    aggregated.prTypo,
+    aggregated.issueFeatureBug,
+    aggregated.issueDocs,
+    totalScore,
+  ].join(',');
 }
 
 cli
@@ -82,11 +103,8 @@ cli
         process.exit(1);
       }
 
-      console.log('분석 기능 구현 중입니다.');
-      console.log(`저장소: ${repos.join(', ')}`);
-      console.log(`형식: ${format}`);
-
       const githubService = createGitHubService(token);
+      const repoDataList: RepoData[] = [];
 
       for (const {repoPath, owner, repoName} of parsedRepos) {
         try {
@@ -98,6 +116,8 @@ cli
           console.log(
             `[${repoPath}] 이슈: ${stats.issues}, PR: ${stats.pullRequests}`,
           );
+
+          repoDataList.push(ScoreCalculator.calculateRepoData(detailed));
 
           if (format === 'txt') {
             const prCounts = countByCategory(detailed.prs);
@@ -119,6 +139,14 @@ cli
           console.error(`오류: '${repoPath}'의 데이터를 가져올 수 없습니다.`);
           console.error(`상세 원인: ${errorMessage}`);
           process.exit(1);
+        }
+      }
+
+      if (format === 'csv') {
+        const userScores = ScoreCalculator.calculateUserScores(repoDataList);
+        console.log(CSV_HEADER);
+        for (const user of userScores) {
+          console.log(formatCsvRow(user));
         }
       }
     },

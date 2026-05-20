@@ -13,7 +13,7 @@ bun install
 
 ### CLI 실행
 
-여러 개의 저장소를 한 번에 분석할 수 있습니다.
+여러 개의 저장소를 한 번에 분석할 수 있습니다. 기본 실행 시 사용자별 점수가 CSV로 stdout에 출력됩니다(헤더: `userId,prFeatureBug,prDocs,prTypo,issueFeatureBug,issueDocs,totalScore`).
 
 ```bash
 # 기본 실행 예시

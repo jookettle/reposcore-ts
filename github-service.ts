@@ -1,43 +1,16 @@
 import {graphql} from '@octokit/graphql';
-import type {ContributionKind} from './score-calculator';
+import type {
+  ContributionLabel,
+  DetailedRepoData,
+  IssueRecord,
+  PRRecord,
+} from './types';
+
+export type {ContributionLabel, DetailedRepoData, IssueRecord, PRRecord};
 
 export interface RepoStats {
   issues: number;
   pullRequests: number;
-}
-
-// score-calculator.ts 의 ContributionKind(doc 단수형)를 그대로 재사용해
-// 도메인 용어를 통일합니다. 미인식 라벨은 'none'으로만 확장합니다.
-export type ContributionLabel = ContributionKind | 'none';
-
-export interface PRRecord {
-  number: number;
-  title: string;
-  url: string;
-  isMerged: boolean;
-  labels: string[];
-  category: ContributionLabel;
-  additions?: number;
-  deletions?: number;
-  mergedAt?: string;
-  author?: string;
-}
-
-export interface IssueRecord {
-  number: number;
-  title: string;
-  url: string;
-  labels: string[];
-  category: ContributionLabel;
-  state: string;
-  author?: string;
-  createdAt?: string;
-  closedAt?: string;
-}
-
-export interface DetailedRepoData {
-  prs: PRRecord[];
-  issues: IssueRecord[];
 }
 
 interface RepositoryStatsResponse {
@@ -149,12 +122,16 @@ const toPrRecord = (raw: RawPullRequest): PRRecord => {
 // GraphQL 응답을 DetailedRepoData로 변환합니다.
 // 응답에 라벨이 없거나 인식되지 않는 경우 category는 'none'으로 설정됩니다.
 export const mapDetailedRepoResponse = (
+  owner: string,
+  repo: string,
   response: DetailedRepoResponse,
 ): DetailedRepoData => {
   const issueNodes = response.repository.issues?.nodes ?? [];
   const prNodes = response.repository.pullRequests?.nodes ?? [];
 
   return {
+    owner,
+    repo,
     issues: issueNodes.map(toIssueRecord),
     prs: prNodes.map(toPrRecord),
   };
@@ -255,7 +232,7 @@ export const createGitHubService = (token: string) => {
       {owner, repo, pageSize: PAGE_SIZE},
     );
 
-    return mapDetailedRepoResponse(response);
+    return mapDetailedRepoResponse(owner, repo, response);
   };
 
   return {
