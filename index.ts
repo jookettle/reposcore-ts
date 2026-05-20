@@ -26,13 +26,18 @@ cli
   .option('--format <format>', '출력 형식 (csv, txt)', {
     default: 'csv',
   })
+  .option('--no-cache', '캐시를 무시하고 GitHub API를 새로 호출합니다')
   .action(
-    async (repos: string[], options: {token?: string; format: string}) => {
+    async (
+      repos: string[],
+      options: {token?: string; format: string; cache: boolean},
+    ) => {
       const token =
         options.token === '$GITHUB_TOKEN'
           ? Bun.env.GITHUB_TOKEN || ''
           : options.token || '';
       const format = String(options.format || '').toLowerCase();
+      const useCache = options.cache; // --no-cache 전달 시 false
       const errors: string[] = [];
       const parsedRepos: {
         repoPath: string;
@@ -92,7 +97,7 @@ cli
         try {
           const [stats, detailed] = await Promise.all([
             githubService.getRepoStats(owner, repoName),
-            githubService.getDetailedRepoData(owner, repoName),
+            githubService.getDetailedRepoData(owner, repoName, useCache),
           ]);
 
           console.log(

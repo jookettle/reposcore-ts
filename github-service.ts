@@ -1,4 +1,5 @@
 import {graphql} from '@octokit/graphql';
+import {loadCache, saveCache} from './cache';
 import type {ContributionKind} from './score-calculator';
 
 export interface RepoStats {
@@ -216,10 +217,16 @@ export const createGitHubService = (token: string) => {
 
   // closed 이슈와 merged PR을 한 번의 GraphQL 요청으로 조회합니다.
   // 라벨 정보를 포함하며, 응답 누락 시 안전하게 빈 값으로 처리됩니다.
+  // useCache=true(기본)이면 .cache/<owner>_<repo>.json을 읽어 재사용하고,
+  // 캐시가 없거나 useCache=false이면 API를 호출한 뒤 결과를 저장합니다.
   const getDetailedRepoData = async (
     owner: string,
     repo: string,
+    useCache = true,
   ): Promise<DetailedRepoData> => {
+    const cached = await loadCache<DetailedRepoData>(owner, repo, !useCache);
+    if (cached) return cached.data;
+
     const response = await githubGraphQL<DetailedRepoResponse>(
       `
       query($owner: String!, $repo: String!, $pageSize: Int!) {
@@ -255,7 +262,11 @@ export const createGitHubService = (token: string) => {
       {owner, repo, pageSize: PAGE_SIZE},
     );
 
-    return mapDetailedRepoResponse(response);
+    const data = mapDetailedRepoResponse(response);
+
+    await saveCache(owner, repo, data);
+
+    return data;
   };
 
   return {
