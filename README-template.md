@@ -13,7 +13,7 @@ bun install
 
 ### CLI 실행
 
-여러 개의 저장소를 한 번에 분석할 수 있습니다. 기본 실행 시 사용자별 점수가 CSV로 stdout에 출력됩니다(헤더: `userId,prFeatureBug,prDocs,prTypo,issueFeatureBug,issueDocs,totalScore`).
+여러 개의 저장소를 한 번에 분석할 수 있습니다.
 
 ```bash
 # 기본 실행 예시
@@ -29,23 +29,7 @@ bun run index.ts oss2026hnu/reposcore-ts --token YOUR_GITHUB_TOKEN
 ## Synopsis
 
 <!-- SYNOPSIS_START -->
-```text
-reposcore-ts
 
-Usage:
-  $ reposcore-ts [...repos]
-
-Commands:
-  [...repos]  대상 저장소 목록 (예: owner/repo1 owner/repo2)
-
-For more info, run any command with the `--help` flag:
-  $ reposcore-ts --help
-
-Options:
-  --token <token>    GitHub Personal Access Token (default: $GITHUB_TOKEN)
-  --format <format>  출력 형식 (csv, txt) (default: csv)
-  -h, --help         Display this message
-```
 <!-- SYNOPSIS_END -->
 
 ## Synopsis 업데이트
