@@ -1,6 +1,6 @@
 import {cac} from 'cac';
 import {createGitHubService} from './github-service';
-import type {DetailedRepoData} from './github-service';
+import {ScoreCalculator, type RepoData} from './score-calculator';
 import {summarizeRepo, writeOutputFiles} from './output';
 import type {RepoSummary} from './output';
 
@@ -95,13 +95,20 @@ cli
       console.error(`저장소: ${repos.join(', ')}`);
 
       const githubService = createGitHubService(token);
-      const summaries: RepoSummary[] = [];
+      const repoDataList: RepoData[] = [];
+      const repoSummaries: RepoSummary[] = [];
 
       for (const {repoPath, owner, repoName} of parsedRepos) {
         try {
-          const detailed: DetailedRepoData =
-            await githubService.getDetailedRepoData(owner, repoName, useCache);
-          summaries.push(summarizeRepo(repoPath, detailed));
+          const detailed = await githubService.getDetailedRepoData(
+            owner,
+            repoName,
+            useCache,
+          );
+          repoDataList.push(
+            ScoreCalculator.calculateRepoData(detailed, owner, repoName),
+          );
+          repoSummaries.push(summarizeRepo(repoPath, detailed));
         } catch (error: unknown) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
@@ -112,7 +119,12 @@ cli
         }
       }
 
-      const written = await writeOutputFiles(format as SupportedFormat, summaries);
+      const userScores = ScoreCalculator.calculateUserScores(repoDataList);
+
+      const written = await writeOutputFiles(format as SupportedFormat, {
+        userScores,
+        repoSummaries,
+      });
       console.error(`CSV 저장: ${written.csv}`);
       if ('txt' in written) {
         console.error(`TXT 저장: ${written.txt}`);

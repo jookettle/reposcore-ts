@@ -1,27 +1,4 @@
-export type ContributionKind = 'feature' | 'bug' | 'doc' | 'typo';
-
-export interface IssueInfo {
-  userId: string;
-  kind: ContributionKind;
-  isClosed: boolean;
-  title: string;
-  url: string;
-}
-
-export interface PrInfo {
-  userId: string;
-  kind: ContributionKind;
-  isMerged: boolean;
-  title: string;
-  url: string;
-}
-
-export interface RepoStats {
-  owner: string;
-  repo: string;
-  issues: IssueInfo[];
-  pullRequests: PrInfo[];
-}
+import type {DetailedRepoData} from './types';
 
 export interface IssuePrData {
   userId: string;
@@ -52,7 +29,9 @@ export class ScoreCalculator {
   private static readonly ISSUE_DOCS_WEIGHT = 1;
 
   // 저장소의 이슈와 PR을 사용자별 IssuePrData 리스트로 변환합니다.
-  static buildIssuePrData(repoStats: RepoStats): IssuePrData[] {
+  // category === 'none'(미인식 라벨)인 항목은 점수 산정 대상이 아니므로 건너뜁니다.
+  // author가 없는 경우(삭제된 사용자/봇)는 'unknown'으로 매핑합니다.
+  static buildIssuePrData(repo: DetailedRepoData): IssuePrData[] {
     const bucket = new Map<string, IssuePrData>();
 
     const getOrCreate = (userId: string): IssuePrData => {
@@ -73,22 +52,24 @@ export class ScoreCalculator {
       return created;
     };
 
-    for (const issue of repoStats.issues) {
-      const target = getOrCreate(issue.userId);
-      if (issue.kind === 'feature' || issue.kind === 'bug') {
+    for (const issue of repo.issues) {
+      if (issue.category === 'none') continue;
+      const target = getOrCreate(issue.author ?? 'unknown');
+      if (issue.category === 'feature' || issue.category === 'bug') {
         target.issueFeatureBug += 1;
-      } else if (issue.kind === 'doc') {
+      } else if (issue.category === 'doc') {
         target.issueDocs += 1;
       }
     }
 
-    for (const pr of repoStats.pullRequests) {
-      const target = getOrCreate(pr.userId);
-      if (pr.kind === 'feature' || pr.kind === 'bug') {
+    for (const pr of repo.prs) {
+      if (pr.category === 'none') continue;
+      const target = getOrCreate(pr.author ?? 'unknown');
+      if (pr.category === 'feature' || pr.category === 'bug') {
         target.prFeatureBug += 1;
-      } else if (pr.kind === 'doc') {
+      } else if (pr.category === 'doc') {
         target.prDocs += 1;
-      } else if (pr.kind === 'typo') {
+      } else if (pr.category === 'typo') {
         target.prTypo += 1;
       }
     }
@@ -96,12 +77,16 @@ export class ScoreCalculator {
     return Array.from(bucket.values());
   }
 
-  // RepoStats를 RepoData로 변환하여 저장소별 scoreData를 만듭니다.
-  static calculateRepoData(repoStats: RepoStats): RepoData {
+  // DetailedRepoData를 RepoData로 변환하여 저장소별 scoreData를 만듭니다.
+  static calculateRepoData(
+    detailed: DetailedRepoData,
+    owner: string,
+    repo: string,
+  ): RepoData {
     return {
-      owner: repoStats.owner,
-      repo: repoStats.repo,
-      scoreData: ScoreCalculator.buildIssuePrData(repoStats),
+      owner,
+      repo,
+      scoreData: ScoreCalculator.buildIssuePrData(detailed),
     };
   }
 
