@@ -1,5 +1,6 @@
 import {cac} from 'cac';
 import {countByCategory, createGitHubService} from './github-service';
+import {ScoreCalculator, type RepoData} from './score-calculator';
 
 const cli = cac('reposcore-ts');
 
@@ -87,11 +88,8 @@ cli
         process.exit(1);
       }
 
-      console.log('분석 기능 구현 중입니다.');
-      console.log(`저장소: ${repos.join(', ')}`);
-      console.log(`형식: ${format}`);
-
       const githubService = createGitHubService(token);
+      const repoDataList: RepoData[] = [];
 
       for (const {repoPath, owner, repoName} of parsedRepos) {
         try {
@@ -102,6 +100,10 @@ cli
 
           console.log(
             `[${repoPath}] 이슈: ${stats.issues}, PR: ${stats.pullRequests}`,
+          );
+
+          repoDataList.push(
+            ScoreCalculator.calculateRepoData(detailed, owner, repoName),
           );
 
           if (format === 'txt') {
@@ -124,6 +126,32 @@ cli
           console.error(`오류: '${repoPath}'의 데이터를 가져올 수 없습니다.`);
           console.error(`상세 원인: ${errorMessage}`);
           process.exit(1);
+        }
+      }
+
+      if (format === 'csv') {
+        const userScores = ScoreCalculator.calculateUserScores(repoDataList);
+        console.log(
+          'userId,prFeatureBug,prDocs,prTypo,issueFeatureBug,issueDocs,totalScore',
+        );
+        for (const user of userScores) {
+          let prFeatureBug = 0;
+          let prDocs = 0;
+          let prTypo = 0;
+          let issueFeatureBug = 0;
+          let issueDocs = 0;
+          for (const repo of user.repoScores) {
+            for (const data of repo.scoreData) {
+              prFeatureBug += data.prFeatureBug;
+              prDocs += data.prDocs;
+              prTypo += data.prTypo;
+              issueFeatureBug += data.issueFeatureBug;
+              issueDocs += data.issueDocs;
+            }
+          }
+          console.log(
+            `${user.userId},${prFeatureBug},${prDocs},${prTypo},${issueFeatureBug},${issueDocs},${user.totalScore}`,
+          );
         }
       }
     },

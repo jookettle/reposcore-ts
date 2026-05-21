@@ -1,44 +1,17 @@
 import {graphql} from '@octokit/graphql';
+
+import type {
+  ContributionLabel,
+  DetailedRepoData,
+  IssueRecord,
+  PRRecord,
+} from './types';
+
 import {loadCache, saveCache} from './cache';
-import type {ContributionKind} from './score-calculator';
 
 export interface RepoStats {
   issues: number;
   pullRequests: number;
-}
-
-// score-calculator.ts 의 ContributionKind(doc 단수형)를 그대로 재사용해
-// 도메인 용어를 통일합니다. 미인식 라벨은 'none'으로만 확장합니다.
-export type ContributionLabel = ContributionKind | 'none';
-
-export interface PRRecord {
-  number: number;
-  title: string;
-  url: string;
-  isMerged: boolean;
-  labels: string[];
-  category: ContributionLabel;
-  additions?: number;
-  deletions?: number;
-  mergedAt?: string;
-  author?: string;
-}
-
-export interface IssueRecord {
-  number: number;
-  title: string;
-  url: string;
-  labels: string[];
-  category: ContributionLabel;
-  state: string;
-  author?: string;
-  createdAt?: string;
-  closedAt?: string;
-}
-
-export interface DetailedRepoData {
-  prs: PRRecord[];
-  issues: IssueRecord[];
 }
 
 interface RepositoryStatsResponse {
