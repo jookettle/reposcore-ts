@@ -1,10 +1,13 @@
 import {cac} from 'cac';
-import {countByCategory, createGitHubService} from './github-service';
+import {createGitHubService} from './github-service';
 import {ScoreCalculator, type RepoData} from './score-calculator';
+import {summarizeRepo, writeOutputFiles} from './output';
+import type {RepoSummary} from './output';
 
 const cli = cac('reposcore-ts');
 
-const supportedFormats = ['csv', 'txt'];
+const supportedFormats = ['csv', 'txt'] as const;
+type SupportedFormat = (typeof supportedFormats)[number];
 
 function parseRepoPath(repoPath: string) {
   const parts = repoPath.split('/');
@@ -52,7 +55,7 @@ cli
         );
       }
 
-      if (!supportedFormats.includes(format)) {
+      if (!supportedFormats.includes(format as SupportedFormat)) {
         errors.push(
           `오류: 지원하지 않는 출력 형식 '${options.format}'입니다. csv 또는 txt를 입력하세요.`,
         );
@@ -88,37 +91,24 @@ cli
         process.exit(1);
       }
 
+      console.error(`형식: ${format}`);
+      console.error(`저장소: ${repos.join(', ')}`);
+
       const githubService = createGitHubService(token);
       const repoDataList: RepoData[] = [];
+      const repoSummaries: RepoSummary[] = [];
 
       for (const {repoPath, owner, repoName} of parsedRepos) {
         try {
-          const [stats, detailed] = await Promise.all([
-            githubService.getRepoStats(owner, repoName),
-            githubService.getDetailedRepoData(owner, repoName, useCache),
-          ]);
-
-          console.log(
-            `[${repoPath}] 이슈: ${stats.issues}, PR: ${stats.pullRequests}`,
+          const detailed = await githubService.getDetailedRepoData(
+            owner,
+            repoName,
+            useCache,
           );
-
           repoDataList.push(
             ScoreCalculator.calculateRepoData(detailed, owner, repoName),
           );
-
-          if (format === 'txt') {
-            const prCounts = countByCategory(detailed.prs);
-            const issueCounts = countByCategory(detailed.issues);
-            const featurePrCount = prCounts.feature + prCounts.bug;
-            const featureIssueCount = issueCounts.feature + issueCounts.bug;
-            console.log(`[${repoPath}]`);
-            console.log(
-              `Merged PRs - feature: ${featurePrCount}, docs: ${prCounts.doc}, typo: ${prCounts.typo}`,
-            );
-            console.log(
-              `Closed Issues - feature: ${featureIssueCount}, docs: ${issueCounts.doc}`,
-            );
-          }
+          repoSummaries.push(summarizeRepo(repoPath, detailed));
         } catch (error: unknown) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
@@ -129,30 +119,15 @@ cli
         }
       }
 
-      if (format === 'csv') {
-        const userScores = ScoreCalculator.calculateUserScores(repoDataList);
-        console.log(
-          'userId,prFeatureBug,prDocs,prTypo,issueFeatureBug,issueDocs,totalScore',
-        );
-        for (const user of userScores) {
-          let prFeatureBug = 0;
-          let prDocs = 0;
-          let prTypo = 0;
-          let issueFeatureBug = 0;
-          let issueDocs = 0;
-          for (const repo of user.repoScores) {
-            for (const data of repo.scoreData) {
-              prFeatureBug += data.prFeatureBug;
-              prDocs += data.prDocs;
-              prTypo += data.prTypo;
-              issueFeatureBug += data.issueFeatureBug;
-              issueDocs += data.issueDocs;
-            }
-          }
-          console.log(
-            `${user.userId},${prFeatureBug},${prDocs},${prTypo},${issueFeatureBug},${issueDocs},${user.totalScore}`,
-          );
-        }
+      const userScores = ScoreCalculator.calculateUserScores(repoDataList);
+
+      const written = await writeOutputFiles(format as SupportedFormat, {
+        userScores,
+        repoSummaries,
+      });
+      console.error(`CSV 저장: ${written.csv}`);
+      if ('txt' in written) {
+        console.error(`TXT 저장: ${written.txt}`);
       }
     },
   );
