@@ -9,18 +9,6 @@ import type {
 
 import {loadCache, saveCache} from './cache';
 
-export interface RepoStats {
-  issues: number;
-  pullRequests: number;
-}
-
-interface RepositoryStatsResponse {
-  repository: {
-    issues: {totalCount: number};
-    pullRequests: {totalCount: number};
-  };
-}
-
 interface RawAuthor {
   login: string;
 }
@@ -168,28 +156,6 @@ export const createGitHubService = (token: string) => {
     },
   });
 
-  const getRepoStats = async (
-    owner: string,
-    repo: string,
-  ): Promise<RepoStats> => {
-    const result = await githubGraphQL<RepositoryStatsResponse>(
-      `
-      query($owner: String!, $repo: String!) {
-        repository(owner: $owner, name: $repo) {
-          issues { totalCount }
-          pullRequests { totalCount }
-        }
-      }
-      `,
-      {owner, repo},
-    );
-
-    return {
-      issues: result.repository.issues.totalCount,
-      pullRequests: result.repository.pullRequests.totalCount,
-    };
-  };
-
   const getAllClosedIssues = async (
     owner: string,
     repo: string,
@@ -334,7 +300,6 @@ export const createGitHubService = (token: string) => {
   };
 
   return {
-    getRepoStats,
     getDetailedRepoData,
   };
 };
