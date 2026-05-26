@@ -9,36 +9,8 @@ import type {
 
 import {loadCache, saveCache} from './cache';
 
-interface RawAuthor {
-  login: string;
-}
-
-interface RawLabel {
-  name: string;
-}
-
-interface RawIssue {
-  number: number;
-  title: string;
-  url: string;
-  state: string;
-  createdAt: string;
-  closedAt: string | null;
-  author: RawAuthor | null;
-  labels: {nodes: RawLabel[]} | null;
-}
-
-interface RawPullRequest {
-  number: number;
-  title: string;
-  url: string;
-  merged: boolean;
-  mergedAt: string | null;
-  additions: number;
-  deletions: number;
-  author: RawAuthor | null;
-  labels: {nodes: RawLabel[]} | null;
-}
+type RawIssue = Omit<IssueRecord, 'category'>;
+type RawPullRequest = Omit<PRRecord, 'category'>;
 
 interface PageInfo {
   hasNextPage: boolean;
@@ -88,39 +60,22 @@ export const categorizeLabels = (labels: string[]): ContributionLabel => {
   return 'none';
 };
 
-const extractLabelNames = (labels: {nodes: RawLabel[]} | null): string[] => {
+const extractLabelNames = (labels: {nodes: {name: string}[]} | null): string[] => {
   if (!labels || !labels.nodes) return [];
   return labels.nodes.map(node => node.name).filter(name => Boolean(name));
 };
 
 const toIssueRecord = (raw: RawIssue): IssueRecord => {
-  const labels = extractLabelNames(raw.labels);
   return {
-    number: raw.number,
-    title: raw.title,
-    url: raw.url,
-    labels,
-    category: categorizeLabels(labels),
-    state: raw.state,
-    author: raw.author?.login,
-    createdAt: raw.createdAt,
-    closedAt: raw.closedAt ?? undefined,
+    ...raw,
+    category: categorizeLabels(extractLabelNames(raw.labels)),
   };
 };
 
 const toPrRecord = (raw: RawPullRequest): PRRecord => {
-  const labels = extractLabelNames(raw.labels);
   return {
-    number: raw.number,
-    title: raw.title,
-    url: raw.url,
-    isMerged: raw.merged,
-    labels,
-    category: categorizeLabels(labels),
-    additions: raw.additions,
-    deletions: raw.deletions,
-    mergedAt: raw.mergedAt ?? undefined,
-    author: raw.author?.login,
+    ...raw,
+    category: categorizeLabels(extractLabelNames(raw.labels)),
   };
 };
 

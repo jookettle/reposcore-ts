@@ -7,29 +7,26 @@ export type ContributionKind = 'feature' | 'bug' | 'doc' | 'typo';
 // 인식되지 않는 라벨은 'none'으로 표현합니다.
 export type ContributionLabel = ContributionKind | 'none';
 
-export interface PRRecord {
+export interface BaseRecord {
   number: number;
   title: string;
   url: string;
-  isMerged: boolean;
-  labels: string[];
+  author: {login: string} | null;
+  labels: {nodes: {name: string}[]} | null;
   category: ContributionLabel;
-  additions?: number;
-  deletions?: number;
-  mergedAt?: string;
-  author?: string;
 }
 
-export interface IssueRecord {
-  number: number;
-  title: string;
-  url: string;
-  labels: string[];
-  category: ContributionLabel;
+export interface PRRecord extends BaseRecord {
+  merged: boolean;
+  mergedAt: string | null;
+  additions: number;
+  deletions: number;
+}
+
+export interface IssueRecord extends BaseRecord {
   state: string;
-  author?: string;
-  createdAt?: string;
-  closedAt?: string;
+  createdAt: string;
+  closedAt: string | null;
 }
 
 export interface DetailedRepoData {
