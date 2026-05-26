@@ -54,7 +54,7 @@ export class ScoreCalculator {
 
     for (const issue of repo.issues) {
       if (issue.category === 'none') continue;
-      const target = getOrCreate(issue.author ?? 'unknown');
+      const target = getOrCreate(issue.author?.login ?? 'unknown');
       if (issue.category === 'feature' || issue.category === 'bug') {
         target.issueFeatureBug += 1;
       } else if (issue.category === 'doc') {
@@ -64,7 +64,7 @@ export class ScoreCalculator {
 
     for (const pr of repo.prs) {
       if (pr.category === 'none') continue;
-      const target = getOrCreate(pr.author ?? 'unknown');
+      const target = getOrCreate(pr.author?.login ?? 'unknown');
       if (pr.category === 'feature' || pr.category === 'bug') {
         target.prFeatureBug += 1;
       } else if (pr.category === 'doc') {
