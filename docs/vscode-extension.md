@@ -34,6 +34,38 @@
 
 ---
 
+### TSDoc Comment Generator 사용법
+
+설치 후 다음 순서로 TSDoc 주석 골격을 자동 생성할 수 있습니다.
+
+1. 주석을 추가할 **함수·클래스·인터페이스 바로 윗줄**에 커서를 위치시킵니다.
+2. `/**` 를 입력하고 **Enter** 를 누릅니다.
+3. tsdoc-gen이 해당 선언의 매개변수·반환값을 분석하여 `@param`, `@returns` 태그가 포함된 골격을 자동으로 삽입합니다.
+4. 생성된 골격의 각 항목에 설명을 채워 넣으면 됩니다.
+
+```ts
+// 예: 아래 함수 위에서 /** + Enter
+function calculateScore(name: string, score: number): string {
+  return `${name}: ${score}`;
+}
+
+// 자동 생성 결과
+/**
+ * (여기에 함수 설명 작성)
+ * @param name (설명 작성)
+ * @param score (설명 작성)
+ * @returns (설명 작성)
+ */
+function calculateScore(name: string, score: number): string {
+  return `${name}: ${score}`;
+}
+```
+
+> TSDoc 태그 목록(`@param`, `@returns`, `@example` 등) 및 주석 형식 상세 규칙은
+> [tsdoc-typedoc-guide.md](./tsdoc-typedoc-guide.md)를 참고하세요.
+
+---
+
 ## 💻 설정 방법 (Format On Save)
 
 TypeScript 코드를 저장할 때마다 자동으로 스타일이 정리되도록 아래 설정을 권장합니다.
