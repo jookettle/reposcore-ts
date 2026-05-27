@@ -105,10 +105,28 @@ cli
             repoName,
             useCache,
           );
-          repoDataList.push(
-            ScoreCalculator.calculateRepoData(detailed, owner, repoName),
+
+          const repoData = ScoreCalculator.calculateRepoData(detailed, owner, repoName);
+          const repoSummary = summarizeRepo(repoPath, detailed);
+
+          repoDataList.push(repoData);
+          repoSummaries.push(repoSummary);
+
+          const singleUserScores = ScoreCalculator.calculateUserScores([repoData]);
+          const subDir = `${owner}-${repoName}`;
+          const written = await writeOutputFiles(
+            format as SupportedFormat,
+            {
+              userScores: singleUserScores,
+              repoSummaries: [repoSummary],
+            },
+            'output',
+            subDir,
           );
-          repoSummaries.push(summarizeRepo(repoPath, detailed));
+          console.error(`[${repoPath}] CSV 저장: ${written.csv}`);
+          if ('txt' in written) {
+            console.error(`[${repoPath}] TXT 저장: ${written.txt}`);
+          }
         } catch (error: unknown) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
@@ -119,15 +137,17 @@ cli
         }
       }
 
-      const userScores = ScoreCalculator.calculateUserScores(repoDataList);
+      if (parsedRepos.length >= 2) {
+        const userScores = ScoreCalculator.calculateUserScores(repoDataList);
 
-      const written = await writeOutputFiles(format as SupportedFormat, {
-        userScores,
-        repoSummaries,
-      });
-      console.error(`CSV 저장: ${written.csv}`);
-      if ('txt' in written) {
-        console.error(`TXT 저장: ${written.txt}`);
+        const written = await writeOutputFiles(format as SupportedFormat, {
+          userScores,
+          repoSummaries,
+        });
+        console.error(`[합산] CSV 저장: ${written.csv}`);
+        if ('txt' in written) {
+          console.error(`[합산] TXT 저장: ${written.txt}`);
+        }
       }
     },
   );

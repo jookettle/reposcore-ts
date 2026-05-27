@@ -1,3 +1,4 @@
+import {mkdir} from 'node:fs/promises';
 import {countByCategory} from './github-service';
 import type {DetailedRepoData} from './types';
 import type {UserScore} from './score-calculator';
@@ -23,10 +24,14 @@ export interface OutputPaths {
 // 향후 --output 옵션이 추가되어도 경로 조합 로직이 한곳에 모이도록 분리합니다.
 export const getOutputPaths = (
   outputDir: string = DEFAULT_OUTPUT_DIR,
-): OutputPaths => ({
-  csv: `${outputDir}/${CSV_FILENAME}`,
-  txt: `${outputDir}/${TXT_FILENAME}`,
-});
+  subDir?: string,
+): OutputPaths => {
+  const targetDir = subDir ? `${outputDir}/${subDir}` : outputDir;
+  return {
+    csv: `${targetDir}/${CSV_FILENAME}`,
+    txt: `${targetDir}/${TXT_FILENAME}`,
+  };
+};
 
 // DetailedRepoData를 저장소별 카테고리 요약(RepoSummary)으로 변환합니다.
 // TXT 파일에서 가독성 있는 저장소별 블록을 생성하는 데 사용됩니다.
@@ -135,8 +140,12 @@ export const writeOutputFiles = async (
   format: 'csv' | 'txt',
   data: ScoreOutputData,
   outputDir: string = DEFAULT_OUTPUT_DIR,
+  subDir?: string,
 ): Promise<OutputPaths | {csv: string}> => {
-  const paths = getOutputPaths(outputDir);
+  const paths = getOutputPaths(outputDir, subDir);
+
+  const targetDir = subDir ? `${outputDir}/${subDir}` : outputDir;
+  await mkdir(targetDir, {recursive: true});
 
   await Bun.write(paths.csv, buildUserScoresCsv(data.userScores));
 
